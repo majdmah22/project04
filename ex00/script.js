@@ -44,31 +44,33 @@ updateThemeButton(document.body.classList.contains("light-theme"));
 
 if (themeToggle) {
   themeToggle.addEventListener("click", function () {
-    // Callback: runs when the click event occurs.
+    // Toggle between dark and light themes.
     document.body.classList.toggle("light-theme");
 
-    // Read the new state after changing the DOM.
     const isLightMode =
       document.body.classList.contains("light-theme");
 
-    // Save the user's choice for the next visit.
+    // Save the selected theme.
     localStorage.setItem(
       "portfolio-theme",
       isLightMode ? "light" : "dark"
     );
 
-    // Update the button to match the selected theme.
+    // Update the theme button.
     updateThemeButton(isLightMode);
   });
 }
 
-/* 2. CONTACT FORM VALIDATION */
+/* 2. CONTACT FORM WITH FORMSPREE */
 
 const contactForm = document.getElementById("contact-form");
 const formMessage = document.getElementById("form-message");
 
+// Replace this URL with your actual Formspree endpoint.
+const FORMSPREE_URL = "https://formspree.io/f/xwlvydlp";
+
 if (contactForm && formMessage) {
-  contactForm.addEventListener("submit", function (event) {
+  contactForm.addEventListener("submit", async function (event) {
     event.preventDefault();
 
     const nameInput = document.getElementById("name");
@@ -85,22 +87,58 @@ if (contactForm && formMessage) {
     const email = emailInput.value.trim();
     const message = messageInput.value.trim();
 
+    // Check that all fields are completed.
     if (name === "" || email === "" || message === "") {
       formMessage.textContent = "Please complete all fields.";
       return;
     }
 
+    // Validate the email address.
     if (!emailInput.checkValidity()) {
       formMessage.textContent =
         "Please enter a valid email address.";
       return;
     }
 
-    formMessage.textContent =
-      "Thank you, " + name +
-      "! Your form was validated successfully. No email was sent.";
+    const submitButton = contactForm.querySelector(
+      'button[type="submit"]'
+    );
 
-    contactForm.reset();
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = "Sending...";
+    }
+
+    formMessage.textContent = "";
+
+    try {
+      const response = await fetch(FORMSPREE_URL, {
+        method: "POST",
+        body: new FormData(contactForm),
+        headers: {
+          Accept: "application/json"
+        }
+      });
+
+      if (response.ok) {
+        formMessage.textContent =
+          "Thank you, " + name +
+          "! Your message was sent successfully.";
+
+        contactForm.reset();
+      } else {
+        formMessage.textContent =
+          "Unable to send your message. Please try again.";
+      }
+    } catch (error) {
+      formMessage.textContent =
+        "A network error occurred. Please try again.";
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = "Message";
+      }
+    }
   });
 }
 
